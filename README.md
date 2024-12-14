@@ -31,7 +31,7 @@ pip install pillow
 3. Starte die Anwendung, indem du das Skript ausführst:
 
 ```bash
-python fahrzeugsteuerung.py
+python driver.py
 ```
 
 4. Steuere das Fahrzeug mit den folgenden Tasten:
