@@ -1,6 +1,3 @@
-Hier ist eine vollständige `README.md`-Dokumentation für dein Projekt basierend auf dem von dir bereitgestellten Python-Code:
-
-```markdown
 # Fahrzeugsteuerung in Python
 
 Dieses Projekt implementiert eine einfache Fahrzeugsteuerung für ein Auto, das sich auf einer Rennstrecke bewegt. Die Steuerung erfolgt über die Tastatur und ermöglicht es dem Fahrzeug, zu beschleunigen, zu bremsen, zu lenken und sich zu drehen. Die Anwendung ist mit `tkinter` für die Benutzeroberfläche und `Pillow` für die Bildbearbeitung erstellt.
