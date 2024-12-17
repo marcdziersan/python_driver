@@ -15,25 +15,33 @@ class FahrzeugSteuerung:
         # Rennstrecke zeichnen
         self.zeichne_rennstrecke()
 
-        # Fahrzeugbild laden
-        self.original_image = Image.open("auto.png").resize((50, 50))  # Originalbild
+        # Spielerfahrzeug laden
+        self.original_image = Image.open("auto.png").resize((50, 50))
         self.auto_image = self.original_image
         self.auto_tk_image = ImageTk.PhotoImage(self.auto_image)
+        self.auto = self.canvas.create_image(100, 300, image=self.auto_tk_image)
 
-        # Fahrzeug auf dem Canvas platzieren
-        self.auto = self.canvas.create_image(400, 300, image=self.auto_tk_image)
+        # Computerfahrzeug laden
+        self.original_ai_image = Image.open("debug.png").resize((50, 50))
+        self.ai_image = self.original_ai_image
+        self.ai_tk_image = ImageTk.PhotoImage(self.ai_image)
+        self.ai_auto = self.canvas.create_image(400, 300, image=self.ai_tk_image)
 
-        # Initiale Position und Winkel
-        self.x, self.y = 400, 300
-        self.angle = 0  # 0 Grad zeigt nach oben
+        # Initiale Positionen und Winkel
+        self.x, self.y = 100, 300  # Spielerfahrzeug
+        self.ai_x, self.ai_y = 400, 300  # Computerfahrzeug
+        self.angle = 0
+        self.ai_angle = 0
 
         # Geschwindigkeit
         self.speed = 0
         self.max_speed = 10
         self.acceleration = 0.5
-        self.friction = 0.2  # Verzögerung, wenn keine Taste gedrückt wird
-        self.brake_force = 1.0  # Bremskraft
-        self.turn_speed = 3  # Drehgeschwindigkeit in Grad
+        self.friction = 0.2
+        self.brake_force = 1.0
+        self.turn_speed = 2
+
+        self.ai_speed = 3  # Konstante Geschwindigkeit für den Computer
 
         # Steuerungszustand
         self.keys = {"w": False, "s": False, "a": False, "d": False, "space": False,
@@ -58,8 +66,8 @@ class FahrzeugSteuerung:
 
     def zeichne_rennstrecke(self):
         # Rennstrecke als Rechteck mit einem inneren "Grasbereich"
-        strecke_aussen = self.canvas.create_oval(50, 50, 750, 550, outline="black", width=3)
-        strecke_innen = self.canvas.create_oval(200, 150, 600, 450, outline="black", width=3)
+        self.strecke_aussen = self.canvas.create_oval(50, 50, 750, 550, outline="black", width=3)
+        self.strecke_innen = self.canvas.create_oval(200, 150, 600, 450, outline="black", width=3)
 
         # Rennstrecke einfärben
         self.canvas.create_oval(51, 51, 749, 549, fill="gray", outline="")
@@ -79,6 +87,16 @@ class FahrzeugSteuerung:
         self.canvas_height = self.canvas.winfo_height()
 
     def update(self):
+        # Spielerfahrzeug-Logik
+        self.update_spielerfahrzeug()
+
+        # Computerfahrzeug-Logik
+        self.update_computerfahrzeug()
+
+        # Nächste Aktualisierung
+        self.master.after(16, self.update)  # Ca. 60 FPS
+
+    def update_spielerfahrzeug(self):
         # Beschleunigung oder Verzögerung anwenden
         if self.keys["w"] or self.keys["Up"] or self.keys["KP_8"]:
             self.speed = min(self.speed + self.acceleration, self.max_speed)
@@ -113,8 +131,20 @@ class FahrzeugSteuerung:
         self.drehe_auto()
         self.canvas.coords(self.auto, self.x, self.y)
 
-        # Nächste Aktualisierung
-        self.master.after(16, self.update)  # Ca. 60 FPS
+    def update_computerfahrzeug(self):
+        # Computerfahrzeug bewegt sich entlang eines festen Kreises
+        center_x, center_y = 400, 300  # Mittelpunkt des inneren Kreises
+        radius = 200 # Radius des inneren Kreises
+        # Winkel aktualisieren (Konstante Geschwindigkeit)
+        self.ai_angle = (self.ai_angle + self.ai_speed) % 360
+
+        # Neue Position berechnen
+        self.ai_x = center_x + radius * math.cos(math.radians(self.ai_angle))
+        self.ai_y = center_y + radius * math.sin(math.radians(self.ai_angle))
+
+        # Fahrzeugbild rotieren und Position aktualisieren
+        self.drehe_ai_auto()
+        self.canvas.coords(self.ai_auto, self.ai_x, self.ai_y)
 
     def innerhalb_grenzen(self, new_x, new_y):
         # Berechne die Fahrzeuggrenzen
@@ -130,10 +160,16 @@ class FahrzeugSteuerung:
         return True
 
     def drehe_auto(self):
-        # Fahrzeugbild drehen basierend auf dem Winkel
+        # Spielerfahrzeugbild drehen basierend auf dem Winkel
         self.auto_image = self.original_image.rotate(-self.angle)
         self.auto_tk_image = ImageTk.PhotoImage(self.auto_image)
         self.canvas.itemconfig(self.auto, image=self.auto_tk_image)
+
+    def drehe_ai_auto(self):
+        # Computerfahrzeugbild drehen basierend auf dem Winkel
+        self.ai_image = self.original_ai_image.rotate(-self.ai_angle)
+        self.ai_tk_image = ImageTk.PhotoImage(self.ai_image)
+        self.canvas.itemconfig(self.ai_auto, image=self.ai_tk_image)
 
 # Hauptanwendung starten
 if __name__ == "__main__":
