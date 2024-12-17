@@ -15,7 +15,7 @@ class FahrzeugSteuerung:
 
         # FPS Label
         self.fps_label = tk.Label(self.master, text="FPS: 0", fg="black", font=("Arial", 14))
-        self.fps_label.pack(anchor="ne", padx=30, pady=30)
+        self.fps_label.pack(anchor="ne", padx=10, pady=10)
 
         # Rennstrecke zeichnen
         self.zeichne_rennstrecke()
@@ -72,13 +72,25 @@ class FahrzeugSteuerung:
         self.update()
 
     def zeichne_rennstrecke(self):
-        # Rennstrecke als Rechteck mit einem inneren "Grasbereich"
+        # Rennstrecke als Oval mit einem inneren "Grasbereich"
         self.strecke_aussen = self.canvas.create_oval(50, 50, 750, 550, outline="black", width=3)
         self.strecke_innen = self.canvas.create_oval(200, 150, 600, 450, outline="black", width=3)
 
         # Rennstrecke einfärben
         self.canvas.create_oval(51, 51, 749, 549, fill="gray", outline="")
         self.canvas.create_oval(201, 151, 599, 449, fill="green", outline="")
+
+        # Start- und Ziellinie um 45 Grad gedreht hinzufügen
+        start_x, start_y = 50, 300
+        laenge = 150
+        winkel = math.radians(0)
+
+        # Neue Endkoordinaten berechnen
+        end_x = start_x + laenge * math.cos(winkel)
+        end_y = start_y + laenge * math.sin(winkel)
+
+        # Linie zeichnen
+        self.startlinie = self.canvas.create_line(start_x, start_y, end_x, end_y, fill="white", width=3, dash=(5, 5))
 
     def taste_druecken(self, event):
         if event.keysym in self.keys:
@@ -104,7 +116,7 @@ class FahrzeugSteuerung:
         self.update_fps()
 
         # Nächste Aktualisierung
-        self.master.after(12, self.update)  # Ca. 50-60 FPS------------------------------------------------------------------------
+        self.master.after(15, self.update)  # Ca. 60 FPS
 
     def update_spielerfahrzeug(self):
         # Beschleunigung oder Verzögerung anwenden
@@ -144,7 +156,7 @@ class FahrzeugSteuerung:
     def update_computerfahrzeug(self):
         # Computerfahrzeug bewegt sich entlang eines festen Kreises
         center_x, center_y = 400, 300  # Mittelpunkt des inneren Kreises
-        radius = 200 # Radius des inneren Kreises
+        radius = 200  # Radius des inneren Kreises
         # Winkel aktualisieren (Konstante Geschwindigkeit)
         self.ai_angle = (self.ai_angle + self.ai_speed) % 360
 
@@ -158,15 +170,31 @@ class FahrzeugSteuerung:
 
     def innerhalb_grenzen(self, new_x, new_y):
         # Berechne die Fahrzeuggrenzen
-        half_width = self.auto_width / 2
-        half_height = self.auto_height / 2
+        center_x, center_y = new_x, new_y
 
-        # Grenzen prüfen
-        if (new_x - half_width < 0 or
-            new_x + half_width > self.canvas_width or
-            new_y - half_height < 0 or
-            new_y + half_height > self.canvas_height):
+        # Ovalgrenzen (außen)
+        oval_left, oval_top, oval_right, oval_bottom = 50, 50, 750, 550
+        outer_center_x = (oval_left + oval_right) / 2
+        outer_center_y = (oval_top + oval_bottom) / 2
+        outer_radius_x = (oval_right - oval_left) / 2
+        outer_radius_y = (oval_bottom - oval_top) / 2
+
+        # Punkt im äußeren Oval prüfen
+        if ((center_x - outer_center_x) ** 2) / (outer_radius_x ** 2) + ((center_y - outer_center_y) ** 2) / (outer_radius_y ** 2) > 1:
             return False
+
+        # Ovalgrenzen (innen)
+        oval_left, oval_top, oval_right, oval_bottom = 200, 150, 600, 450
+        inner_center_x = (oval_left + oval_right) / 2
+        inner_center_y = (oval_top + oval_bottom) / 2
+        inner_radius_x = (oval_right - oval_left) / 2
+        inner_radius_y = (oval_bottom - oval_top) / 2
+
+        # Punkt im inneren Oval prüfen
+        if ((center_x - inner_center_x) ** 2) / (inner_radius_x ** 2) + ((center_y - inner_center_y) ** 2) / (inner_radius_y ** 2) < 1:
+            return False
+
+        # Fahrzeug befindet sich zwischen den Ovalsgrenzen
         return True
 
     def drehe_auto(self):
@@ -189,7 +217,6 @@ class FahrzeugSteuerung:
         if elapsed_time >= 1.0:
             fps = self.frame_count / elapsed_time
             self.fps_label.config(text=f"FPS: {fps:.2f}")
-            print(f"FPS: {fps:.2f}")
             self.last_time = current_time
             self.frame_count = 0
 
