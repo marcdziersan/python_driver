@@ -39,7 +39,7 @@ class FahrzeugSteuerung:
         self.acceleration = 0.5
         self.friction = 0.2
         self.brake_force = 1.0
-        self.turn_speed = 2
+        self.turn_speed = 3.5
 
         self.ai_speed = 3  # Konstante Geschwindigkeit für den Computer
 
