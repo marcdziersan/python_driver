@@ -1,16 +1,21 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 import math
+import time
 
 class FahrzeugSteuerung:
     def __init__(self, master):
         self.master = master
         self.master.title("Fahrzeugsteuerung")
-        self.master.geometry("800x600")  # Fenstergröße
+        self.master.geometry("800x600")
 
         # Canvas für das Fahrzeug
         self.canvas = tk.Canvas(self.master, bg="white", width=800, height=600)
         self.canvas.pack(fill="both", expand=True)
+
+        # FPS Label
+        self.fps_label = tk.Label(self.master, text="FPS: 0", fg="black", font=("Arial", 14))
+        self.fps_label.pack(anchor="ne", padx=30, pady=30)
 
         # Rennstrecke zeichnen
         self.zeichne_rennstrecke()
@@ -28,8 +33,8 @@ class FahrzeugSteuerung:
         self.ai_auto = self.canvas.create_image(400, 300, image=self.ai_tk_image)
 
         # Initiale Positionen und Winkel
-        self.x, self.y = 100, 300  # Spielerfahrzeug
-        self.ai_x, self.ai_y = 400, 300  # Computerfahrzeug
+        self.x, self.y = 100, 300
+        self.ai_x, self.ai_y = 400, 300
         self.angle = 0
         self.ai_angle = 0
 
@@ -41,7 +46,7 @@ class FahrzeugSteuerung:
         self.brake_force = 1.0
         self.turn_speed = 3.5
 
-        self.ai_speed = 3  # Konstante Geschwindigkeit für den Computer
+        self.ai_speed = 3
 
         # Steuerungszustand
         self.keys = {"w": False, "s": False, "a": False, "d": False, "space": False,
@@ -62,6 +67,8 @@ class FahrzeugSteuerung:
         self.master.bind("<KeyRelease>", self.taste_loslassen)
 
         # Update-Schleife
+        self.last_time = time.time()
+        self.frame_count = 0
         self.update()
 
     def zeichne_rennstrecke(self):
@@ -93,8 +100,11 @@ class FahrzeugSteuerung:
         # Computerfahrzeug-Logik
         self.update_computerfahrzeug()
 
+        # FPS aktualisieren
+        self.update_fps()
+
         # Nächste Aktualisierung
-        self.master.after(16, self.update)  # Ca. 60 FPS
+        self.master.after(12, self.update)  # Ca. 50-60 FPS------------------------------------------------------------------------
 
     def update_spielerfahrzeug(self):
         # Beschleunigung oder Verzögerung anwenden
@@ -170,6 +180,18 @@ class FahrzeugSteuerung:
         self.ai_image = self.original_ai_image.rotate(-self.ai_angle)
         self.ai_tk_image = ImageTk.PhotoImage(self.ai_image)
         self.canvas.itemconfig(self.ai_auto, image=self.ai_tk_image)
+
+    def update_fps(self):
+        # Berechnung der FPS
+        self.frame_count += 1
+        current_time = time.time()
+        elapsed_time = current_time - self.last_time
+        if elapsed_time >= 1.0:
+            fps = self.frame_count / elapsed_time
+            self.fps_label.config(text=f"FPS: {fps:.2f}")
+            print(f"FPS: {fps:.2f}")
+            self.last_time = current_time
+            self.frame_count = 0
 
 # Hauptanwendung starten
 if __name__ == "__main__":
