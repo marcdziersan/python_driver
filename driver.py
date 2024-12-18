@@ -13,9 +13,9 @@ class FahrzeugSteuerung:
         self.canvas = tk.Canvas(self.master, bg="white", width=800, height=600)
         self.canvas.pack(fill="both", expand=True)
 
-        # FPS Label
-        self.fps_label = tk.Label(self.master, text="FPS: 0", fg="black", font=("Arial", 14))
-        self.fps_label.pack(anchor="ne", padx=10, pady=10)
+        # Runden-Counter
+        self.runden_label = tk.Label(self.master, text="Spieler Runden: 0 | KI Runden: 0", fg="black", font=("Arial", 14))
+        self.runden_label.pack(anchor="nw", padx=10, pady=10)
 
         # Rennstrecke zeichnen
         self.zeichne_rennstrecke()
@@ -30,23 +30,24 @@ class FahrzeugSteuerung:
         self.original_ai_image = Image.open("debug.png").resize((50, 50))
         self.ai_image = self.original_ai_image
         self.ai_tk_image = ImageTk.PhotoImage(self.ai_image)
-        self.ai_auto = self.canvas.create_image(400, 300, image=self.ai_tk_image)
+        self.ai_auto = self.canvas.create_image(150, 300, image=self.ai_tk_image)
 
         # Initiale Positionen und Winkel
         self.x, self.y = 100, 300
-        self.ai_x, self.ai_y = 400, 300
+        self.ai_x, self.ai_y = 150, 300
         self.angle = 0
         self.ai_angle = 0
 
         # Geschwindigkeit
         self.speed = 0
-        self.max_speed = 10
+        self.max_speed = 5
         self.acceleration = 0.5
         self.friction = 0.2
         self.brake_force = 1.0
         self.turn_speed = 3.5
 
-        self.ai_speed = 3
+        self.ai_speed = 1
+        self.ai_active = False
 
         # Steuerungszustand
         self.keys = {"w": False, "s": False, "a": False, "d": False, "space": False,
@@ -58,6 +59,12 @@ class FahrzeugSteuerung:
         self.auto_height = 50
         self.canvas_width = 800
         self.canvas_height = 600
+
+        # Runden-Counter
+        self.spieler_runden = 0
+        self.ai_runden = 0
+        self.startlinie_gekreuzt_spieler = False
+        self.startlinie_gekreuzt_ai = False
 
         # Ereignisse für Fenstergrößenänderung
         self.master.bind("<Configure>", self.aktualisiere_fenstergroesse)
@@ -73,14 +80,14 @@ class FahrzeugSteuerung:
 
     def zeichne_rennstrecke(self):
         # Rennstrecke als Oval mit einem inneren "Grasbereich"
-        self.strecke_aussen = self.canvas.create_oval(50, 50, 750, 550, outline="black", width=3)
-        self.strecke_innen = self.canvas.create_oval(200, 150, 600, 450, outline="black", width=3)
+        self.strecke_aussen = self.canvas.create_oval(50, 50, 750, 550, outline="red", dash=(5, 20), width=5)
+        self.strecke_innen = self.canvas.create_oval(200, 150, 600, 450, outline="red", dash=(5, 20), width=5)
 
         # Rennstrecke einfärben
         self.canvas.create_oval(51, 51, 749, 549, fill="gray", outline="")
         self.canvas.create_oval(201, 151, 599, 449, fill="green", outline="")
 
-        # Start- und Ziellinie um 45 Grad gedreht hinzufügen
+        # Start- und Ziellinie hinzufügen
         start_x, start_y = 50, 300
         laenge = 150
         winkel = math.radians(0)
@@ -110,13 +117,17 @@ class FahrzeugSteuerung:
         self.update_spielerfahrzeug()
 
         # Computerfahrzeug-Logik
-        self.update_computerfahrzeug()
+        if self.ai_active:
+            self.update_computerfahrzeug()
 
         # FPS aktualisieren
         self.update_fps()
 
+        # Runden-Counter aktualisieren
+        self.update_runden_counter()
+
         # Nächste Aktualisierung
-        self.master.after(15, self.update)  # Ca. 60 FPS
+        self.master.after(15, self.update)
 
     def update_spielerfahrzeug(self):
         # Beschleunigung oder Verzögerung anwenden
@@ -134,6 +145,10 @@ class FahrzeugSteuerung:
                 self.speed = max(self.speed - self.friction, 0)
             elif self.speed < 0:
                 self.speed = min(self.speed + self.friction, 0)
+
+        # KI aktivieren, wenn der Spieler losfährt
+        if not self.ai_active and self.speed != 0:
+            self.ai_active = True
 
         # Bewegung basierend auf Geschwindigkeit
         new_x = self.x + self.speed * math.sin(math.radians(self.angle))
@@ -155,8 +170,8 @@ class FahrzeugSteuerung:
 
     def update_computerfahrzeug(self):
         # Computerfahrzeug bewegt sich entlang eines festen Kreises
-        center_x, center_y = 400, 300  # Mittelpunkt des inneren Kreises
-        radius = 200  # Radius des inneren Kreises
+        center_x, center_y = 400, 300
+        radius = 200
         # Winkel aktualisieren (Konstante Geschwindigkeit)
         self.ai_angle = (self.ai_angle + self.ai_speed) % 360
 
@@ -209,6 +224,26 @@ class FahrzeugSteuerung:
         self.ai_tk_image = ImageTk.PhotoImage(self.ai_image)
         self.canvas.itemconfig(self.ai_auto, image=self.ai_tk_image)
 
+    def update_runden_counter(self):
+        # Spieler überquert die Ziellinie
+        if self.x <= 50 and not self.startlinie_gekreuzt_spieler:
+            self.spieler_runden += 1
+            self.startlinie_gekreuzt_spieler = True
+        elif self.x > 50:
+            self.startlinie_gekreuzt_spieler = False
+
+        # KI überquert die Ziellinie
+        if self.ai_x <= 50 and not self.startlinie_gekreuzt_ai:
+            self.ai_runden += 1
+            self.startlinie_gekreuzt_ai = True
+        elif self.ai_x > 50:
+            self.startlinie_gekreuzt_ai = False
+
+        #// // // Noch nicht fertig implementiert
+        # Runden-Counter aktualisieren
+        self.runden_label.config(text=f"Spieler Runden: {self.spieler_runden} | KI Runden: {self.ai_runden}")
+        # print(f"Spieler Runden: {self.spieler_runden} | KI Runden: {self.ai_runden}")
+
     def update_fps(self):
         # Berechnung der FPS
         self.frame_count += 1
@@ -216,7 +251,7 @@ class FahrzeugSteuerung:
         elapsed_time = current_time - self.last_time
         if elapsed_time >= 1.0:
             fps = self.frame_count / elapsed_time
-            self.fps_label.config(text=f"FPS: {fps:.2f}")
+            print(f"FPS: {fps:.2f}")
             self.last_time = current_time
             self.frame_count = 0
 
